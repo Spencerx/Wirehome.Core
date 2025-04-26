@@ -38,7 +38,7 @@ public sealed class MqttClientBackend : IMqttBackend
     public Task<IList<MqttClientStatus>> GetClientsAsync()
     {
         // Not supported.
-        return Task.FromResult((IList<MqttClientStatus>)new List<MqttClientStatus>(0));
+        return Task.FromResult((IList<MqttClientStatus>) []);
     }
 
     public Task<int> GetConnectedClientsCount()
@@ -49,12 +49,12 @@ public sealed class MqttClientBackend : IMqttBackend
 
     public Task<IList<MqttApplicationMessage>> GetRetainedMessagesAsync()
     {
-        return Task.FromResult((IList<MqttApplicationMessage>)new List<MqttApplicationMessage>(0));
+        return Task.FromResult((IList<MqttApplicationMessage>) []);
     }
 
     public Task<IList<MqttSessionStatus>> GetSessionsAsync()
     {
-        return Task.FromResult((IList<MqttSessionStatus>)new List<MqttSessionStatus>(0));
+        return Task.FromResult((IList<MqttSessionStatus>) []);
     }
 
     public void Initialize()
@@ -86,6 +86,7 @@ public sealed class MqttClientBackend : IMqttBackend
     public Task StartAsync()
     {
         Task.Run(() => MaintainConnectionLoop(_systemCancellationToken.Token), _systemCancellationToken.Token);
+
         return Task.CompletedTask;
     }
 
@@ -98,7 +99,9 @@ public sealed class MqttClientBackend : IMqttBackend
 
     async Task MaintainConnectionLoop(CancellationToken cancellationToken)
     {
-        var options = new MqttClientOptionsBuilder().WithTcpServer(_options.RemoteServerHost, _options.RemoteServerPort).WithProtocolVersion(MqttProtocolVersion.V500).Build();
+        var options = new MqttClientOptionsBuilder().WithTcpServer(_options.RemoteServerHost, _options.RemoteServerPort).WithProtocolVersion(MqttProtocolVersion.V500)
+            .WithKeepAlivePeriod(TimeSpan.FromSeconds(120)).WithClientId("wirehome").Build();
+
         var defaultSubscription = new MqttClientSubscribeOptionsBuilder().WithTopicFilter("#").Build();
 
         while (!cancellationToken.IsCancellationRequested)
@@ -119,7 +122,7 @@ public sealed class MqttClientBackend : IMqttBackend
             }
             finally
             {
-                await Task.Delay(TimeSpan.FromMinutes(1), cancellationToken).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromSeconds(10), cancellationToken).ConfigureAwait(false);
             }
         }
     }
